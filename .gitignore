@@ -348,3 +348,12 @@ MigrationBackup/
 
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
+/ConsoleTest/App.config
+/ConsoleTest/Properties/AssemblyInfo.cs
+/Sql2Xlsx/Properties/AssemblyInfo.cs
+/Sql2Xlsx/App.config
+/notes and comments.txt
+/ETS_accrual_flows.xlsx
+/accrual_flows_ETS.sql
+/accrual_flows.xlsx
+/SQLServer2016-SSEI-Expr.exe

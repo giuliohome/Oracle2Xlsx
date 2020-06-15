@@ -18,7 +18,8 @@ namespace Sql2Xlsx
             {
                 return;
             }
-            var wb = new XLWorkbook();
+            bool exists = File.Exists(OutputPath);
+            var wb = exists ? new XLWorkbook(OutputPath) : new XLWorkbook();
             var ws = wb.Worksheets.Add(SheetName);
 
             for (int i = 0; i < rows[0].Length; i++)
@@ -42,7 +43,7 @@ namespace Sql2Xlsx
 
             // apply style
             table.Theme = XLTableTheme.TableStyleLight12;
-            wb.SaveAs(OutputPath);
+            if (exists) wb.Save(); else wb.SaveAs(OutputPath);
         }
         public static void Write2Text(Field[][] rows, string OutputPath)
         {
@@ -98,7 +99,11 @@ namespace Sql2Xlsx
                             field.FieldCount = i;
                             field.Name = DR.GetName(i);
                             field.DataType = DR.GetDataTypeName(i);
-                            field.ObjValue = DR.GetValue(i);
+                            // decimal overflow workaround 
+                            field.ObjValue =
+                                field.DataType == "Decimal"?
+                                DR.GetDouble(i) :
+                                DR.GetValue(i);
                             fields[i] = field;
                         }
                         yield return fields;
