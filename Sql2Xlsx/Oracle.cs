@@ -72,6 +72,13 @@ namespace Sql2Xlsx
                 return sr.ReadToEnd();
             }
         }
+        public static async Task<string> ReadSqlAsync(string path)
+        {
+            using (StreamReader sr = new StreamReader(path))
+            {
+                return await sr.ReadToEndAsync();
+            }
+        }
         public static IEnumerable<Field[]> Read(string ExtractSql)
         {
             var connStr = ConfigurationManager.ConnectionStrings["EndurDB"].ConnectionString;
@@ -110,6 +117,54 @@ namespace Sql2Xlsx
                     }
                 }
             }
+        }
+        // private because it does not make sense to use it if it only falls back to the sync version
+        private static async Task<Field[][]> ReadAsync(string ExtractSql)
+        {
+            var connStr = ConfigurationManager.ConnectionStrings["EndurDB"].ConnectionString;
+            // https://stackoverflow.com/questions/63907271/is-oracle-openasync-etc-not-a-truly-async-method
+            List<Field[]> ret = new List<Field[]>();
+            await Task.Run(async () =>
+            {
+                using (OracleConnection conn = new OracleConnection(connStr))
+                {
+                    await conn.OpenAsync();
+                    string viewschema = ConfigurationManager.AppSettings["ViewSchema"];
+                    using (OracleCommand cmd = new OracleCommand("alter session set CURRENT_SCHEMA = " + viewschema, conn))
+                    {
+                        int res = await cmd.ExecuteNonQueryAsync(); // -1 is ok
+                                                                    //Console.WriteLine("session set result: " + res);
+                    }
+                    using (OracleCommand cmd = new OracleCommand(ExtractSql, conn))
+                    {
+                        // https://stackoverflow.com/questions/63907271/is-oracle-openasync-etc-not-a-truly-async-method
+                        OracleDataReader DR = (OracleDataReader) await cmd.ExecuteReaderAsync();
+                        int count = 0;
+
+                        while (await DR.ReadAsync())
+                        {
+                            count++;
+                            Field[] fields = new Field[DR.FieldCount];
+                            for (int i = 0; i < DR.FieldCount; i++)
+                            {
+                                Field field = new Field();
+                                field.RowCount = count;
+                                field.FieldCount = i;
+                                field.Name = DR.GetName(i);
+                                field.DataType = DR.GetDataTypeName(i);
+                                field.ObjValue =
+                                    field.DataType == "Decimal" ?
+                                    DR.GetDouble(i) :
+                                    DR.GetValue(i);
+                                fields[i] = field;
+                            }
+                            ret.Add(fields);
+                        }
+                    }
+                }
+
+            });
+            return ret.ToArray();
         }
     }
 }
