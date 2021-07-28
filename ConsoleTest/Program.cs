@@ -12,6 +12,20 @@ namespace ConsoleTest
     {
         static void Main(string[] args)
         {
+            string oldsql = Oracle.ReadSql(@"C:\sviluppi\Endur\code\git\EndurAccruals\EndurAccruals\Scripts\query_old.sql");
+            string newsql = Oracle.ReadSql(@"C:\sviluppi\Endur\code\git\EndurAccruals\EndurAccruals\Scripts\query_new.sql");
+            Field[][] rows_old = Oracle.Read(oldsql).ToArray();
+            Field[][] rows_new = Oracle.Read(newsql).ToArray();
+            Field[] strange = rows_new.FirstOrDefault(r =>
+            {
+                object newcargo = r.First(f => f.Name == "CARGO_ID").ObjValue;
+                return (newcargo != null &&
+                    rows_old.FirstOrDefault(o => (double)o.First(f1 => f1.Name == "CARGO_ID").ObjValue == (double)newcargo)
+                    == null);
+
+            });
+
+            return;
             if (args.Length != 3)
             {
                 Console.WriteLine("Usage: ConsoleTest.exe sql.txt output.xlsx sheetname");

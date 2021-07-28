@@ -109,7 +109,12 @@ namespace Sql2Xlsx
                             // decimal overflow workaround 
                             field.ObjValue =
                                 field.DataType == "Decimal"?
-                                DR.GetDouble(i) :
+                                (
+                                    DR.IsDBNull(i) ?
+                                    (double?)null :
+                                    DR.GetDouble(i)
+                                ) 
+                                :
                                 DR.GetValue(i);
                             fields[i] = field;
                         }
